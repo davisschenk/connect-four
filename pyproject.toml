@@ -1,0 +1,7 @@
+[project]
+name = "connect-four"
+version = "0.1.0"
+description = "The game of Connect Four implemented as a TUI using Python and `sockets` for networking."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
