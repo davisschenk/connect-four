@@ -4,4 +4,10 @@ version = "0.1.0"
 description = "The game of Connect Four implemented as a TUI using Python and `sockets` for networking."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pytest>=8.3.3",
+    "rich>=13.8.1",
+    "ruff>=0.6.5",
+    "textual-dev>=1.6.1",
+    "textual>=0.79.1",
+]

@@ -2,8 +2,11 @@
 default:
     @just -l
 
-server:
-    uv run src/server.py
+server *args:
+    @uv run src/server.py {{args}}
 
-client:
-    uv run src/client.py
+client *args:
+    @uv run src/client.py {{args}}
+
+test:
+    @uv run python -m unittest discover -s "src"
