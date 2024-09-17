@@ -3,7 +3,7 @@
 The game of Connect Four implemented as a TUI using Python and `sockets` for networking.
 
 ## **How to play:**
-1. **Install Dependencies** Use any tool capable of installing from a `pyproject.toml`
+1. **Install Dependencies:** Use any tool capable of installing from a `pyproject.toml`
   - Install [UV](https://docs.astral.sh/uv/) and run `uv sync`
   - Install [just](https://github.com/casey/just) or run commands manually
 1. **Start the server:** Run the `just server` script to start the server.
