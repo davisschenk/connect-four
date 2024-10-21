@@ -19,6 +19,7 @@ The game of Connect Four implemented as a TUI using Python and `sockets` for net
 - [Textual](https://github.com/textualize/textual/)
   Python library designed for building nice TUI's
 
+
 ### Tooling
 - [UV](https://docs.astral.sh/uv/)
   An awesome python project and dependency manager
@@ -28,4 +29,14 @@ The game of Connect Four implemented as a TUI using Python and `sockets` for net
   Automatically run tests to check code before committing to main
 - [pre-commit](https://pre-commit.com/)
   Automatically fix code formatting before commiting
-    
+
+# Protocol
+## Messages
+- Connect
+Register user with server and set name
+- Join Game
+Join an existing game or create a new one if it doesnt exist
+- Move
+Drop a chip at a given location
+- Game State
+Get the updated game state from the server

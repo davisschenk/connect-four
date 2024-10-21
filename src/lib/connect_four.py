@@ -1,14 +1,16 @@
-from enum import Enum
-from typing import Self
-import struct
+from enum import IntEnum
+from typing import Optional
+from pydantic import BaseModel
+import numpy as np
 
 
-class ConnectCell(Enum):
+class ConnectCell(IntEnum):
     EMPTY = 0b00
     RED = 0b01
     YELLOW = 0b10
+    BOUNDARY = 0b11
 
-    def emoji(self):
+    def emoji(self) -> Optional[str]:
         match self:
             case self.EMPTY:
                 return " "
@@ -17,38 +19,60 @@ class ConnectCell(Enum):
             case self.YELLOW:
                 return ":yellow_circle:"
 
+        raise ValueError(f"Can't display {self}")
+
     def __rich__(self) -> str:
         return self.emoji()
 
-class ConnectFour:
-    def __init__(self, rows=6, cols=7) -> None:
-        self.rows = rows
-        self.cols = cols
-        self.board = [
-            [ConnectCell.EMPTY for _ in range(cols)] 
-            for _ in range(rows)
-        ]
 
-    def pack(self) -> str:
-        packed = bytearray()
-        packed.extend(struct.pack(">BB", self.rows, self.cols))
+Board = list[list[ConnectCell]]
 
 
-        for row in self.board:
-            for cell in row:
-                packed.extend(struct.pack("B", cell.value))
+class ConnectFour(BaseModel):
+    rows: int
+    cols: int
+    board: Board
 
-        return packed.hex()
+    def __init__(
+        self,
+        rows: int,
+        cols: int,
+        board: Board = None,
+        **args,
+    ) -> None:
+        if board is None:
+            board = [[ConnectCell.EMPTY for _ in range(rows)] for _ in range(cols)]
 
-    @classmethod
-    def unpack(cls, value: str) -> Self:
-        value = bytearray.fromhex(value)
-        rows, cols = struct.unpack(">BB", value[:2])
-        empty = cls(rows=rows, cols=cols)
+        super().__init__(rows=rows, cols=cols, board=board, **args)
 
-        for row in range(rows):
-            for col in range(cols):
-                cell_value = struct.unpack_from("B", value, 2 + (row * cols) + col)[0]
-                empty.board[row][col] = ConnectCell(cell_value)
+    def __rich__(self):
+        from rich.table import Table
 
-        return empty
+        t = Table(title="Connect Four", width=40)
+        for c in range(self.cols):
+            t.add_column(str(c))
+
+        for row in reversed(range(self.rows)):
+            t.add_row(*[self.get_piece(row, col) for col in range(self.cols)])
+
+        return t
+
+    def get_piece(self, row: int, col: int):
+        if row >= self.rows:
+            raise IndexError(
+                f"Attempted to get row index {row} in a board with {self.rows}"
+            )
+
+        if col >= self.cols:
+            raise IndexError(
+                f"Attempted to get col index {col} in a board with {self.cols}"
+            )
+
+        return self.board[col][row]
+
+    def drop_piece(self, col: int) -> bool: ...
+
+    def check_win(self) -> bool: ...
+
+    def __eq__(self, other):
+        return np.array_equal(self.board, other.board)

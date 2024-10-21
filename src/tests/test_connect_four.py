@@ -1,5 +1,7 @@
-from lib.connect_four import ConnectCell, ConnectFour
 import unittest
+
+from lib.connect_four import ConnectCell, ConnectFour
+from pydantic_core import to_json
 
 
 class TestConnectCell(unittest.TestCase):
@@ -17,40 +19,15 @@ class TestConnectFour(unittest.TestCase):
         self.assertEqual(self.game.rows, 6)
         self.assertEqual(self.game.cols, 7)
         self.assertTrue(
-            all(cell == ConnectCell.EMPTY for row in self.game.board for cell in row)
+            all(cell == ConnectCell.EMPTY for col in self.game.board for cell in col),
         )
-        self.assertEqual(len(self.game.board), self.game.rows)
-        self.assertEqual(len(self.game.board[0]), self.game.cols)
+        self.assertEqual(len(self.game.board[0]), self.game.rows)
 
-    def test_pack_unpack(self):
-        # Set up the board with a specific pattern
-        self.game.board[0][0] = ConnectCell.RED
-        self.game.board[1][1] = ConnectCell.YELLOW
-        self.game.board[2][2] = ConnectCell.RED
+    def test_json_conversion(self):
+        print(type(ConnectCell.EMPTY))
+        json = to_json(self.game)
 
-        # Pack the current state
-        packed_value = self.game.pack()
+        model = ConnectFour.model_validate_json(json)
+        model.board[0][0].emoji()
 
-        # Unpack into a new game instance
-        new_game = ConnectFour.unpack(packed_value)
-
-        # Test that the new game instance has the same properties
-        self.assertEqual(new_game.rows, self.game.rows)
-        self.assertEqual(new_game.cols, self.game.cols)
-        self.assertEqual(new_game.board[0][0], ConnectCell.RED)
-        self.assertEqual(new_game.board[1][1], ConnectCell.YELLOW)
-        self.assertEqual(new_game.board[2][2], ConnectCell.RED)
-
-    def test_pack_unpack_empty_board(self):
-        # Pack the initial empty state
-        packed_value = self.game.pack()
-
-        # Unpack into a new game instance
-        new_game = ConnectFour.unpack(packed_value)
-
-        # Test that the new game instance has the same properties
-        self.assertEqual(new_game.rows, self.game.rows)
-        self.assertEqual(new_game.cols, self.game.cols)
-        self.assertTrue(
-            all(cell == ConnectCell.EMPTY for row in new_game.board for cell in row)
-        )
+        self.assertEqual(self.game, model)
