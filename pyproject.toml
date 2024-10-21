@@ -5,6 +5,7 @@ description = "The game of Connect Four implemented as a TUI using Python and `s
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "aioconsole>=0.8.1",
     "mypy>=1.11.2",
     "numpy>=2.1.1",
     "numpydantic>=1.6.4",

@@ -35,8 +35,8 @@ class ConnectFour(BaseModel):
 
     def __init__(
         self,
-        rows: int,
-        cols: int,
+        rows: int = 6,
+        cols: int = 7,
         board: Board = None,
         **args,
     ) -> None:

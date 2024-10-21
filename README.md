@@ -31,12 +31,7 @@ The game of Connect Four implemented as a TUI using Python and `sockets` for net
   Automatically fix code formatting before commiting
 
 # Protocol
-## Messages
-- Connect
-Register user with server and set name
-- Join Game
-Join an existing game or create a new one if it doesnt exist
-- Move
-Drop a chip at a given location
-- Game State
-Get the updated game state from the server
+## Game Flow
+- Client connects to server
+- Client registers themselves with  the server and is provided a user ID
+- Client requests a game

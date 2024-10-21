@@ -1,16 +1,65 @@
-from enum import Enum
-from pydantic import BaseModel
+from enum import IntEnum
+from pydantic import BaseModel, Field
+from lib.data import Player, Game
+import json
 
-
-class Packets(Enum):
-    CONNECT = 0
-    JOIN_GAME = 1
-    MOVE = 2
-    GAME_STATE = 3
+class Packets(IntEnum):
+    ERROR = -1
+    CONNECT_REQUEST = 0
+    CONNECT_RESPONSE = 1
+    SYNC_GAME = 2
+    FOUND_GAME = 3
 
 
 class Packet(BaseModel):
-    packet: Packets
+    packet_type: Packets = Field(default=Packets.CONNECT_REQUEST)
 
+    def to_json(self):
+        return self.model_dump_json()
+    
+    @classmethod
+    def from_json(cls, data):
+        data = json.loads(data)
+        print(data)
+        packet_type = data.get("packet_type")
+        if packet_type is None:
+            raise ValueError("Packet does not contain a packet_type")
+        
+        packet_class = PACKET_MAPPING.get(packet_type)
+        if packet_class is None:
+            raise ValueError("packet_type not included in PACKET_MAPPING")
+        
+        return packet_class(**data)
+            
+class FoundGame(Packet):
+    packet_type: Packets = Packets.FOUND_GAME
+    
 
-class GetBoard(Packet): ...
+class ConnectRequest(Packet):
+    packet_type: Packets = Field(default=Packets.CONNECT_REQUEST)
+    # Lobby name
+    game_id: str
+    # Player name
+    username: str
+
+class ConnectResponse(Packet):
+    packet_type: Packets = Field(default=Packets.CONNECT_RESPONSE)
+    # Clients player
+    player: Player
+    game: Game
+
+class Error(Packet):
+    packet_type: Packets = Packets.ERROR
+    message: str
+
+class SyncGame(Packet):
+    packet_type: Packets = Packets.SYNC_GAME
+    game: Game
+
+PACKET_MAPPING = {
+    Packets.ERROR: Error,
+    Packets.CONNECT_REQUEST: ConnectRequest,
+    Packets.CONNECT_RESPONSE: ConnectResponse,
+    Packets.SYNC_GAME: SyncGame,
+    Packets.FOUND_GAME: FoundGame
+}
