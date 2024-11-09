@@ -13,12 +13,13 @@ from lib.data import Player, Game
 from lib.connect_four import ConnectFour, ConnectCell
 import asyncio
 import argparse
-import logging
+from loguru import logger
 import uuid
 import random
+import sys
 
-
-logging.basicConfig(level=logging.DEBUG)
+logger.remove(0)
+logger.add(sys.stderr, format="<green>{time}</green> <level>{level}</level> - {message}", level="INFO", colorize=True)
 
 
 class ConnectFourServer:
@@ -30,16 +31,20 @@ class ConnectFourServer:
         self.connections: dict[tuple[str, int], str] = {}
 
     @classmethod
-    async def get_packet(
-        cls, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
-    ):
-        data = await reader.readline()
+    async def get_packet(cls, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+        try:
+            data = await reader.readline()
+        except ConnectionResetError:
+            return None
 
         if data:
-            return Packet.from_json(data)
+            packet = Packet.from_json(data)
+            logger.debug("Recieved packet: {}", packet)
+            return packet
 
     @classmethod
     async def send(self, writer: asyncio.StreamWriter, packet: Packet):
+        logger.debug("Sending packet to {}: {}", writer.get_extra_info("peername"), packet)
         writer.write(packet.to_json().encode() + b"\n")
 
     @classmethod
@@ -47,19 +52,21 @@ class ConnectFourServer:
         await self.send(game.red_player._writer, packet)
         await self.send(game.yellow_player._writer, packet)
 
-    async def handle_client(
-        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
-    ):
+    async def handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         addr = writer.get_extra_info("peername")
-        logging.info("Connection from %s", addr)
+        logger.info("Connection from {}", addr)
 
         while True:
             packet = await self.get_packet(reader, writer)
 
             if packet is None:
-                logging.info(f"Connection lost {addr}")
+                logger.info("Connection lost {}", addr)
                 writer.close()
                 await writer.wait_closed()
+
+                if game_id := self.connections.get(addr):
+                    logger.info("Removing game {}", game_id)
+                    del self.games[game_id]
                 break
 
             if isinstance(packet, ConnectRequest):
@@ -73,11 +80,7 @@ class ConnectFourServer:
             if isinstance(packet, Move):
                 await self.handle_move(writer, packet)
 
-            print(packet)
-
-    async def handle_connect_request(
-        self, writer: asyncio.StreamWriter, packet: ConnectRequest
-    ):
+    async def handle_connect_request(self, writer: asyncio.StreamWriter, packet: ConnectRequest):
         game = self.games.get(packet.game_id)
         player = Player(
             name=packet.username,
@@ -107,9 +110,7 @@ class ConnectFourServer:
         else:
             await self.send(writer, Error(message="Game already full"))
 
-    async def handle_sync_game(
-        self, writer: asyncio.StreamWriter, packet: ConnectRequest
-    ):
+    async def handle_sync_game(self, writer: asyncio.StreamWriter, packet: ConnectRequest):
         addr = writer.get_extra_info("peername")
         game_id = self.connections.get(addr)
 
@@ -131,9 +132,7 @@ class ConnectFourServer:
         game.board.drop_piece(packet.index, color)
 
         if winner := game.board.check_win():
-            player = (
-                game.red_player if winner == ConnectCell.RED else game.yellow_player
-            )
+            player = game.red_player if winner == ConnectCell.RED else game.yellow_player
             await self.broadcast(game, GameOver(game=game, winner=player))
 
         await self.broadcast(game, SyncGame(game=game))
@@ -143,14 +142,14 @@ async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="localhost")
     parser.add_argument("--port", type=int, default=60000)
+    parser.add_argument("--debug", type=str, default="INFO")
 
     args = parser.parse_args()
+
     connect_four = ConnectFourServer()
 
-    server = await asyncio.start_server(
-        connect_four.handle_client, args.host, args.port
-    )
-    logging.info("Serving on %s", server.sockets[0].getsockname())
+    server = await asyncio.start_server(connect_four.handle_client, args.host, args.port)
+    logger.info("Serving on {}", server.sockets[0].getsockname())
 
     async with server:
         await server.serve_forever()

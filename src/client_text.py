@@ -11,12 +11,14 @@ from lib.packets import (
 )
 import asyncio
 import argparse
-import logging
+from loguru import logger
 from aioconsole import ainput
 from rich import print
+import sys
 
 
-logging.basicConfig(level=logging.ERROR)
+logger.remove(0)
+logger.add(sys.stderr, format="<green>{time}</green> <level>{level}</level> - {message}", level="INFO", colorize=True)
 
 
 class ConnectFourClient:
@@ -30,17 +32,17 @@ class ConnectFourClient:
 
     async def connect(self):
         self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
-        logging.info(f"Connected to {self.host}:{self.port}")
+        logger.info("Connected to {}:{}", self.host, self.port)
 
     async def get_packet(self):
         data = await self.reader.readline()
         if not data:
-            logging.info("Connection to server closed")
+            logger.info("Connection to server closed")
             self.writer.close()
             return await self.writer.wait_closed()
 
         packet = Packet.from_json(data)
-        logging.debug("Received packet from server %s", packet.packet_type)
+        logger.debug("Received packet from server {}", packet.packet_type)
         return packet
 
     async def send(self, packet: Packet, wait=True):
@@ -65,18 +67,19 @@ class ConnectFourClient:
                 self.game = response.game
                 registered = True
             elif isinstance(response, Error):
-                logging.error(f"Error while match making: {response}")
+                logger.error(f"Error while match making: {response}")
 
+        print("Waiting for opponent")
         while not connected:
             packet = await self.get_packet()
 
             if isinstance(packet, FoundGame):
                 connected = True
 
-        logging.info("Game started")
+        logger.info("Game started")
 
         while True:
-            logging.debug("Waiting for a packet")
+            logger.debug("Waiting for a packet")
             packet = await self.get_packet()
 
             if isinstance(packet, SyncGame):
