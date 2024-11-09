@@ -23,7 +23,6 @@ class Packet(BaseModel):
     @classmethod
     def from_json(cls, data):
         data = json.loads(data)
-        print(data)
         packet_type = data.get("packet_type")
         if packet_type is None:
             raise ValueError("Packet does not contain a packet_type")

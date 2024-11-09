@@ -1,7 +1,6 @@
 from enum import IntEnum
 from typing import Optional
 from pydantic import BaseModel
-import numpy as np
 
 
 class ConnectCell(IntEnum):
@@ -59,27 +58,19 @@ class ConnectFour(BaseModel):
 
     def get_piece(self, row: int, col: int):
         if row >= self.rows:
-            raise IndexError(
-                f"Attempted to get row index {row} in a board with {self.rows}"
-            )
+            raise IndexError(f"Attempted to get row index {row} in a board with {self.rows}")
 
         if col >= self.cols:
-            raise IndexError(
-                f"Attempted to get col index {col} in a board with {self.cols}"
-            )
+            raise IndexError(f"Attempted to get col index {col} in a board with {self.cols}")
 
         return self.board[col][row]
 
     def set_piece(self, row: int, col: int, color: ConnectCell):
         if row >= self.rows:
-            raise IndexError(
-                f"Attempted to set row index {row} in a board with {self.rows}"
-            )
+            raise IndexError(f"Attempted to set row index {row} in a board with {self.rows}")
 
         if col >= self.cols:
-            raise IndexError(
-                f"Attempted to set col index {col} in a board with {self.cols}"
-            )
+            raise IndexError(f"Attempted to set col index {col} in a board with {self.cols}")
 
         self.board[col][row] = color
 
@@ -99,15 +90,14 @@ class ConnectFour(BaseModel):
                     continue
 
                 # Horizontal Win
-                if col + 3 < self.cols and all(
-                    self.get_piece(row, col + i) == piece for i in range(4)
-                ):
+                if col + 3 < self.cols and all(self.get_piece(row, col + i) == piece for i in range(4)):
                     return piece
 
-                if row + 3 < self.rows and all(
-                    self.get_piece(row + i, col) == piece for i in range(4)
-                ):
+                if row + 3 < self.rows and all(self.get_piece(row + i, col) == piece for i in range(4)):
                     return piece
 
-    def __eq__(self, other):
-        return np.array_equal(self.board, other.board)
+                if row + 3 < self.rows and col + 3 < self.cols and all(self.get_piece(row + i, col + i) for i in range(4)):
+                    return piece
+
+                if row - 3 < self.rows and col + 3 < self.cols and all(self.get_piece(row - i, col + i) for i in range(4)):
+                    return piece
