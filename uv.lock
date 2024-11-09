@@ -139,6 +139,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "aioconsole" },
+    { name = "loguru" },
     { name = "mypy" },
     { name = "numpy" },
     { name = "numpydantic" },
@@ -146,7 +147,6 @@ dependencies = [
     { name = "pytest" },
     { name = "rich" },
     { name = "ruff" },
-    { name = "serde" },
     { name = "textual" },
     { name = "textual-dev" },
 ]
@@ -154,6 +154,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "aioconsole", specifier = ">=0.8.1" },
+    { name = "loguru", specifier = ">=0.7.2" },
     { name = "mypy", specifier = ">=1.11.2" },
     { name = "numpy", specifier = ">=2.1.1" },
     { name = "numpydantic", specifier = ">=1.6.4" },
@@ -161,7 +162,6 @@ requires-dist = [
     { name = "pytest", specifier = ">=8.3.3" },
     { name = "rich", specifier = ">=13.8.1" },
     { name = "ruff", specifier = ">=0.6.5" },
-    { name = "serde", specifier = ">=0.9.0" },
     { name = "textual", specifier = ">=0.79.1" },
     { name = "textual-dev", specifier = ">=1.6.1" },
 ]
@@ -230,6 +230,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/2a/ae/bb56c6828e4797ba5a4821eec7c43b8bf40f69cda4d4f5f8c8a2810ec96a/linkify-it-py-2.0.3.tar.gz", hash = "sha256:68cda27e162e9215c17d786649d1da0021a451bdc436ef9e0fa0ba5234b9b048", size = 27946 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/04/1e/b832de447dee8b582cac175871d2f6c3d5077cc56d5575cadba1fd1cccfa/linkify_it_py-2.0.3-py3-none-any.whl", hash = "sha256:6bcbc417b0ac14323382aef5c5192c0075bf8a9d6b41820a2b66371eac6b6d79", size = 19820 },
+]
+
+[[package]]
+name = "loguru"
+version = "0.7.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "win32-setctime", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9e/30/d87a423766b24db416a46e9335b9602b054a72b96a88a241f2b09b560fa8/loguru-0.7.2.tar.gz", hash = "sha256:e671a53522515f34fd406340ee968cb9ecafbc4b36c679da03c18fd8d0bd51ac", size = 145103 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/03/0a/4f6fed21aa246c6b49b561ca55facacc2a44b87d65b8b92362a8e99ba202/loguru-0.7.2-py3-none-any.whl", hash = "sha256:003d71e3d3ed35f0f8984898359d65b79e5b21943f78af86aa5491210429b8eb", size = 62549 },
 ]
 
 [[package]]
@@ -575,15 +588,6 @@ wheels = [
 ]
 
 [[package]]
-name = "serde"
-version = "0.9.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/01/87/f427afe477c83a6b67b6762e9eef9b7799e36fbb279602757114dcf45bb0/serde-0.9.0.tar.gz", hash = "sha256:5dbbf0910e736d9136a97b8e9b301b76a9f3b19f88d45bc5974b0fc68a5bc3fb", size = 28839 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ec/94/9831ede822ed8fec518bd3d73c56880b40e0973740e91c6f97324282afe0/serde-0.9.0-py3-none-any.whl", hash = "sha256:4887a2077209ef34214be3a18c7796cf442621e30830859c7659fbd784dff299", size = 26204 },
-]
-
-[[package]]
 name = "textual"
 version = "0.79.1"
 source = { registry = "https://pypi.org/simple" }
@@ -647,6 +651,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/91/7a/146a99696aee0609e3712f2b44c6274566bc368dfe8375191278045186b8/uc-micro-py-1.0.3.tar.gz", hash = "sha256:d321b92cff673ec58027c04015fcaa8bb1e005478643ff4a500882eaab88c48a", size = 6043 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/37/87/1f677586e8ac487e29672e4b17455758fce261de06a0d086167bb760361a/uc_micro_py-1.0.3-py3-none-any.whl", hash = "sha256:db1dffff340817673d7b466ec86114a9dc0e9d4d9b5ba229d9d60e5c12600cd5", size = 6229 },
+]
+
+[[package]]
+name = "win32-setctime"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6b/dd/f95a13d2b235a28d613ba23ebad55191514550debb968b46aab99f2e3a30/win32_setctime-1.1.0.tar.gz", hash = "sha256:15cf5750465118d6929ae4de4eb46e8edae9a5634350c01ba582df868e932cb2", size = 3676 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0a/e6/a7d828fef907843b2a5773ebff47fb79ac0c1c88d60c0ca9530ee941e248/win32_setctime-1.1.0-py3-none-any.whl", hash = "sha256:231db239e959c2fe7eb1d7dc129f11172354f98361c4fa2d6d2d7e278baa8aad", size = 3604 },
 ]
 
 [[package]]
