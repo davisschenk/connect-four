@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
-from lib.packets import (
-    Packet,
-    ConnectRequest,
-    ConnectResponse,
-    FoundGame,
-    Error,
-    SyncGame,
-    Move,
-    GameOver,
-)
+from lib.packets import Packet, ConnectRequest, ConnectResponse, FoundGame, Error, SyncGame, Move, GameOver, ConnectionLost
 from lib.data import Player, Game
 from lib.connect_four import ConnectFour, ConnectCell
 import asyncio
@@ -35,6 +26,7 @@ class ConnectFourServer:
         try:
             data = await reader.readline()
         except ConnectionResetError:
+            logger.error("Connection reset")
             return None
 
         if data:
@@ -66,6 +58,7 @@ class ConnectFourServer:
 
                 if game_id := self.connections.get(addr):
                     logger.info("Removing game {}", game_id)
+                    await self.broadcast(self.games[game_id], ConnectionLost())
                     del self.games[game_id]
                 break
 

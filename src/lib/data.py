@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from uuid import UUID
-from lib.connect_four import ConnectFour
+from lib.connect_four import ConnectFour, ConnectCell
 from typing import Optional
 from enum import IntEnum
 import asyncio
@@ -11,6 +11,14 @@ class Player(BaseModel):
     id: UUID
     addr: tuple[str, int]
     _writer: Optional[asyncio.StreamWriter] = None
+
+    def get_color(self, game):
+        if self.id == game.yellow_player.id:
+            return ConnectCell.YELLOW
+        elif self.id == game.red_player.id:
+            return ConnectCell.RED
+
+        raise ValueError("Player is not in game")
 
 
 class GameState(IntEnum):

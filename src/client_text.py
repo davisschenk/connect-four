@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
-from lib.packets import (
-    Packet,
-    ConnectRequest,
-    ConnectResponse,
-    Error,
-    FoundGame,
-    SyncGame,
-    Move,
-    GameOver,
-)
+from lib.packets import Packet, ConnectRequest, ConnectResponse, Error, FoundGame, SyncGame, Move, GameOver, ConnectionLost
 import asyncio
 import argparse
 from loguru import logger
@@ -52,9 +43,7 @@ class ConnectFourClient:
         if wait:
             return await self.get_packet()
 
-    async def play(self):
-        await self.connect()
-        connected = False
+    async def register(self):
         registered = False
 
         while not registered:
@@ -69,18 +58,47 @@ class ConnectFourClient:
             elif isinstance(response, Error):
                 logger.error(f"Error while match making: {response}")
 
-        print("Waiting for opponent")
-        while not connected:
+    async def wait_for_game(self):
+        while True:
             packet = await self.get_packet()
 
             if isinstance(packet, FoundGame):
-                connected = True
+                return True
 
-        logger.info("Game started")
+            logger.warning("Unexpected packet while waiting for game: {}", packet)
 
+        return False
+
+    async def get_move(self):
+        while True:
+            move = await ainput("Move > ")
+            try:
+                move = int(move)
+            except ValueError:
+                print("Enter a valid integer")
+                continue
+
+            if move not in range(0, self.game.board.cols):
+                print("Enter a valid column")
+                continue
+
+            if not self.game.board.drop_piece(move, self.player.get_color(self.game)):
+                print(f"The piece cannot be dropped in column {move}")
+
+            return move
+
+    async def game_loop(self):
+        get_packet = True
         while True:
             logger.debug("Waiting for a packet")
-            packet = await self.get_packet()
+            if get_packet:
+                packet = await self.get_packet()
+            else:
+                get_packet = True
+
+            if isinstance(packet, ConnectionLost):
+                print("Connection to opponent lost, aborting game")
+                break
 
             if isinstance(packet, SyncGame):
                 self.game = packet.game
@@ -99,31 +117,49 @@ class ConnectFourClient:
             print(self.game.board)
 
             if self.game.turn == self.player.id:
-                print("Its my turn!")
-                making_moves = False
-                while not making_moves:
-                    move = await ainput("Move > ")
+                packet_task = asyncio.create_task(self.get_packet())
+                move_task = asyncio.create_task(self.get_move())
+                tasks = [packet_task, move_task]
+
+                done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+
+                for p in pending:
+                    p.cancel()
                     try:
-                        move = int(move)
-                    except ValueError:
-                        print("Enter a valid integer")
-                        continue
+                        await p
+                    except asyncio.CancelledError:
+                        pass
 
-                    if move not in range(0, self.game.board.cols):
-                        print("Enter a valid column")
-                        continue
+                for d in done:
+                    if d == tasks[0]:
+                        packet = d.result()
+                        get_packet = False
+                        logger.info("Packet recieved while making move: {}", packet)
 
-                    making_moves = True
+                    elif d == tasks[1]:
+                        move = d.result()
+                        logger.info("Made move: {}", move)
+                        await self.send(
+                            Move(index=move, player=self.player, game_id=self.game.game_id),
+                            wait=False,
+                        )
 
-                await self.send(
-                    Move(index=move, player=self.player, game_id=self.game.game_id),
-                    wait=False,
-                )
             else:
                 print("Waiting for the next player!")
 
         self.writer.close()
         await self.writer.wait_closed()
+
+    async def play(self):
+        await self.connect()
+
+        await self.register()
+
+        print("Waiting for opponent")
+        await self.wait_for_game()
+
+        logger.info("Game started")
+        await self.game_loop()
 
     async def connect_request(self, username, game_id):
         packet = ConnectRequest(game_id=game_id, username=username)

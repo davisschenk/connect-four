@@ -12,6 +12,7 @@ class Packets(IntEnum):
     FOUND_GAME = 3
     MOVE = 4
     GAME_OVER = 5
+    CONNECT_LOST = 6
 
 
 class Packet(BaseModel):
@@ -76,6 +77,10 @@ class GameOver(Packet):
     winner: Player
 
 
+class ConnectionLost(Packet):
+    packet_type: Packets = Packets.CONNECT_LOST
+
+
 PACKET_MAPPING = {
     Packets.ERROR: Error,
     Packets.CONNECT_REQUEST: ConnectRequest,
@@ -84,4 +89,5 @@ PACKET_MAPPING = {
     Packets.FOUND_GAME: FoundGame,
     Packets.MOVE: Move,
     Packets.GAME_OVER: GameOver,
+    Packets.CONNECT_LOST: ConnectionLost,
 }
