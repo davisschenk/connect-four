@@ -1,25 +1,56 @@
 import argparse
 
-from rich.text import Text
 from textual.app import App, ComposeResult
-from textual.widgets import DataTable, Footer, Header, Static
+from textual.widgets import Footer, Header, Static, Input, Button, Label
+from textual.screen import Screen
+from textual import work
+import asyncio
 
 
-class ConnectFour(Static):
-    def on_mount(self) -> None:
-        table = self.query_one(DataTable)
-        table.cursor_type = "column"
-
-        table.add_columns(*[Text(str(i)) for i in range(1, 8)])
-        for _ in range(6):
-            row = [Text(":red_heart:") for column_i in range(7)]
-            table.add_row(*row)
+class RegisterInputs(Static):
+    CSS = """
+    #start_game {
+        content-align: center;
+    }
+    """
 
     def compose(self) -> ComposeResult:
-        yield DataTable(id="connect-four")
+        yield Label("Game ID:")
+        yield Input(placeholder="Enter your Game ID", id="game_id")
+
+        yield Label("Username:")
+        yield Input(placeholder="Enter your username", id="username")
+
+        yield Button(label="Start Game", id="start_game")
+
+
+class Registeration(Screen):
+    CSS = """
+    RegisterInputs {
+        padding: 2;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        yield Header(name="Register")
+        yield RegisterInputs()
+        yield Footer()
+
+
+class Game(Screen):
+    def compose(self) -> ComposeResult:
+        yield Header(name="Game")
+        yield Static("GAME")
+        yield Footer()
 
 
 class ConnectFourApp(App):
+    BINDINGS = [("q", "switch_mode('game')", "Quit")]
+    MODES = {"registration": Registeration, "game": Game}
+    CSS = """
+
+    """
+
     def __init__(self, args) -> None:
         self.ip = args.ip
         self.port = args.port
@@ -27,10 +58,16 @@ class ConnectFourApp(App):
 
         super().__init__()
 
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield ConnectFour()
-        yield Footer()
+    @work(exclusive=True)
+    async def network(self):
+        while True:
+            await asyncio.sleep(5)
+            self.log("a")
+
+    def on_mount(self) -> None:
+        self.network()
+        self.log("Mounted")
+        self.switch_mode("registration")
 
 
 if __name__ == "__main__":
