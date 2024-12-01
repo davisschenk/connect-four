@@ -6,23 +6,31 @@ from loguru import logger
 from aioconsole import ainput
 from rich import print
 import sys
-
+import ssl
+from pathlib import Path
 
 logger.remove(0)
 logger.add(sys.stderr, format="<green>{time}</green> <level>{level}</level> - {message}", level="INFO", colorize=True)
 
 
 class ConnectFourClient:
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, ssl_cert: Path):
         self.reader = None
         self.writer = None
         self.host = host
         self.port = port
         self.game = None
         self.player = None
+        self.ssl_context = None
+        self.ssl_cert = ssl_cert
 
     async def connect(self):
-        self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
+        self.ssl = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        self.ssl.load_verify_locations(self.ssl_cert)
+        self.ssl.verify_mode = ssl.CERT_REQUIRED
+        self.ssl.check_hostname = False
+
+        self.reader, self.writer = await asyncio.open_connection(self.host, self.port, ssl=self.ssl)
         logger.info("Connected to {}:{}", self.host, self.port)
 
     async def get_packet(self):
@@ -84,6 +92,7 @@ class ConnectFourClient:
 
             if not self.game.board.drop_piece(move, self.player.get_color(self.game)):
                 print(f"The piece cannot be dropped in column {move}")
+                continue
 
             return move
 
@@ -170,10 +179,11 @@ class ConnectFourClient:
 async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="localhost")
-    parser.add_argument("--port", type=int, default=60000)
+    parser.add_argument("--port", "-p", type=int, default=60000)
+    parser.add_argument("--ssl-cert", type=Path, default=Path("certs/fullchain.pem"))
 
     args = parser.parse_args()
-    connect_four = ConnectFourClient(args.host, args.port)
+    connect_four = ConnectFourClient(args.host, args.port, args.ssl_cert)
     await connect_four.play()
 
 

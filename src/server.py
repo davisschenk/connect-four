@@ -8,6 +8,8 @@ from loguru import logger
 import uuid
 import random
 import sys
+import ssl
+from pathlib import Path
 
 logger.remove(0)
 logger.add(sys.stderr, format="<green>{time}</green> <level>{level}</level> - {message}", level="INFO", colorize=True)
@@ -134,14 +136,19 @@ class ConnectFourServer:
 async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="localhost")
-    parser.add_argument("--port", type=int, default=60000)
+    parser.add_argument("--port", "-p", type=int, default=60000)
     parser.add_argument("--debug", type=str, default="INFO")
+    parser.add_argument("--ssl-cert", type=Path, default=Path("certs/fullchain.pem"))
+    parser.add_argument("--ssl-key", type=Path, default=Path("certs/privkey.pem"))
 
     args = parser.parse_args()
 
     connect_four = ConnectFourServer()
 
-    server = await asyncio.start_server(connect_four.handle_client, args.host, args.port)
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ssl_context.load_cert_chain(args.ssl_cert, args.ssl_key)
+
+    server = await asyncio.start_server(connect_four.handle_client, args.host, args.port, ssl=ssl_context)
     logger.info("Serving on {}", server.sockets[0].getsockname())
 
     async with server:
