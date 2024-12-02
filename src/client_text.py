@@ -192,7 +192,7 @@ class ConnectFourClient:
 
 async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", default="localhost", help="Server hostname or IP")
+    parser.add_argument("--host", "-i", default="localhost", help="Server hostname or IP")
     parser.add_argument("--port", "-p", type=int, default=60000, help="Server port")
     parser.add_argument("--ssl-cert", type=Path, default=Path("certs/fullchain.pem"), help="SSL certificate path")
     parser.add_argument("--ssl", action=argparse.BooleanOptionalAction, default=True, help="Options to enable or disable SSL")

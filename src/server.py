@@ -169,7 +169,7 @@ class ConnectFourServer:
 
 async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", default="localhost")
+    parser.add_argument("--host", "-i", default="localhost")
     parser.add_argument("--port", "-p", type=int, default=60000)
     parser.add_argument("--debug", type=str, default="INFO", help="Logging debug level")
     parser.add_argument("--ssl-cert", type=Path, default=Path("certs/fullchain.pem"), help="Path to ssl certificate")
