@@ -32,9 +32,14 @@ class ConnectFourServer:
             return None
 
         if data:
-            packet = Packet.from_json(data)
-            logger.debug("Recieved packet: {}", packet)
-            return packet
+            try:
+                packet = Packet.from_json(data)
+                logger.debug("Recieved packet: {}", packet)
+                return packet
+            except Exception as e:
+                logger.info("Received bad packet: {}", e)
+                await cls.send(writer, Error(message=str(e)))
+                return False
 
     @classmethod
     async def send(self, writer: asyncio.StreamWriter, packet: Packet):
@@ -80,6 +85,9 @@ class ConnectFourServer:
                 await self.close_writer(writer)
                 await self.remove_game(addr)
                 break
+
+            if not packet:
+                continue
 
             if isinstance(packet, ConnectRequest):
                 self.connections[addr] = packet.game_id
