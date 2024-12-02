@@ -24,6 +24,7 @@ class Player(BaseModel):
 class GameState(IntEnum):
     REGISTRATION = 0
     DISCONNECTED = 1
+    FINISHED = 2
 
 
 class Game(BaseModel):

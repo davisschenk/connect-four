@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from lib.packets import Packet, ConnectRequest, ConnectResponse, FoundGame, Error, SyncGame, Move, GameOver, ConnectionLost
-from lib.data import Player, Game
+from lib.data import GameState, Player, Game
 from lib.connect_four import ConnectFour, ConnectCell
 import asyncio
 import argparse
@@ -46,6 +46,28 @@ class ConnectFourServer:
         await self.send(game.red_player._writer, packet)
         await self.send(game.yellow_player._writer, packet)
 
+    async def remove_game(self, addr):
+        if game_id := self.connections.get(addr):
+            if game := self.games.get(game_id):
+                try:
+                    await self.broadcast(game, ConnectionLost())
+                    await self.close_writer(game.red_player._writer)
+                    await self.close_writer(game.yellow_player._writer)
+                    del self.games[game_id]
+                    logger.info("Removed game {}", game_id)
+                except Exception as e:
+                    logger.debug("Bypassing error while removing game: {}", e)
+
+            return True
+        return False
+
+    async def close_writer(self, writer):
+        try:
+            writer.close()
+            await writer.wait_closed()
+        except ssl.SSLError:
+            pass
+
     async def handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         addr = writer.get_extra_info("peername")
         logger.info("Connection from {}", addr)
@@ -55,13 +77,8 @@ class ConnectFourServer:
 
             if packet is None:
                 logger.info("Connection lost {}", addr)
-                writer.close()
-                await writer.wait_closed()
-
-                if game_id := self.connections.get(addr):
-                    logger.info("Removing game {}", game_id)
-                    await self.broadcast(self.games[game_id], ConnectionLost())
-                    del self.games[game_id]
+                await self.close_writer(writer)
+                await self.remove_game(addr)
                 break
 
             if isinstance(packet, ConnectRequest):
@@ -73,7 +90,13 @@ class ConnectFourServer:
                 await self.handle_sync_game(writer, packet)
 
             if isinstance(packet, Move):
-                await self.handle_move(writer, packet)
+                if winner := await self.handle_move(writer, packet):
+                    logger.info("{} won there game in lobby {}", winner, packet.game_id)
+                    await self.remove_game(addr)
+                    break
+
+        logger.info("Closing connection {}", addr)
+        await self.close_writer(writer)
 
     async def handle_connect_request(self, writer: asyncio.StreamWriter, packet: ConnectRequest):
         game = self.games.get(packet.game_id)
@@ -128,18 +151,22 @@ class ConnectFourServer:
 
         if winner := game.board.check_win():
             player = game.red_player if winner == ConnectCell.RED else game.yellow_player
+            game.state = GameState.FINISHED
             await self.broadcast(game, GameOver(game=game, winner=player))
+            return player
 
         await self.broadcast(game, SyncGame(game=game))
+        return None
 
 
 async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="localhost")
     parser.add_argument("--port", "-p", type=int, default=60000)
-    parser.add_argument("--debug", type=str, default="INFO")
-    parser.add_argument("--ssl-cert", type=Path, default=Path("certs/fullchain.pem"))
-    parser.add_argument("--ssl-key", type=Path, default=Path("certs/privkey.pem"))
+    parser.add_argument("--debug", type=str, default="INFO", help="Logging debug level")
+    parser.add_argument("--ssl-cert", type=Path, default=Path("certs/fullchain.pem"), help="Path to ssl certificate")
+    parser.add_argument("--ssl-key", type=Path, default=Path("certs/privkey.pem"), help="Path to SSL private key")
+    parser.add_argument("--ssl", action=argparse.BooleanOptionalAction, default=True, help="Options to enable or disable SSL")
 
     args = parser.parse_args()
 
@@ -148,7 +175,11 @@ async def main():
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ssl_context.load_cert_chain(args.ssl_cert, args.ssl_key)
 
-    server = await asyncio.start_server(connect_four.handle_client, args.host, args.port, ssl=ssl_context)
+    server_args = {}
+    if args.ssl:
+        server_args["ssl"] = ssl_context
+
+    server = await asyncio.start_server(connect_four.handle_client, args.host, args.port, **server_args)
     logger.info("Serving on {}", server.sockets[0].getsockname())
 
     async with server:

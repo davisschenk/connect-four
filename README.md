@@ -1,14 +1,65 @@
 # Connect Four
 
-The game of Connect Four implemented as a TUI using Python and `sockets` for networking.
+The game of Connect Four implemented as a CLI using Python and `sockets` for networking. There are currently 2 clients, a text client and a tui client. The text client is fully featured while the TUI client is still a work in progress.
+
+## **Features:**
+- TLS Socket Encryption
+- Unlimited concurrent games
+- Graceful error handling
+- Nice Terminal interface
+- Utilizes python async sockets
+- Easy to play
+
+
 
 ## **How to play:**
+### Vanilla Python
+1. **(Optional) Create Venv:** Create a virtual environment to install dependencies
+  - Create a virtual environment called venv: `python -m venv venv`
+  - Activate virtual environment: `source venv/bin/activate`
+2. **Install Dependencies:** Install python libraries from `requirements.txt`
+  - `pip install -r requirements.txt`
+3. **Start the server:** `python src/server.py`
+4. **Start a client:** `python src/client_text.py`
+4. **Play the game:** Players take turns entering their moves. The first player to get 4 in a row wins!
+
+
+### UV and Just
 1. **Install Dependencies:** Use any tool capable of installing from a `pyproject.toml`
   - Install [UV](https://docs.astral.sh/uv/) and run `uv sync`
   - Install [just](https://github.com/casey/just) or run commands manually
 2. **Start the server:** Run the `just server` script to start the server.
 3. **Connect clients:** Run the `just client` script on two different machines or terminals.
 4. **Play the game:** Players take turns entering their moves. The first player to get 4 in a row wins!
+
+### Arguments
+#### Server
+```
+usage: server.py [-h] [--host HOST] [--port PORT]
+                 [--debug DEBUG] [--ssl-cert SSL_CERT]
+                 [--ssl-key SSL_KEY] [--ssl | --no-ssl]
+
+options:
+  -h, --help            show this help message and exit
+  --host HOST
+  --port PORT, -p PORT
+  --debug DEBUG         Logging debug level
+  --ssl-cert SSL_CERT   Path to ssl certificate
+  --ssl-key SSL_KEY     Path to SSL private key
+  --ssl, --no-ssl       Options to enable or disable SSL
+```
+#### Client
+```
+usage: client_text.py [-h] [--host HOST] [--port PORT]
+                      [--ssl-cert SSL_CERT] [--ssl | --no-ssl]
+
+options:
+  -h, --help            show this help message and exit
+  --host HOST           Server hostname or IP
+  --port PORT, -p PORT  Server port
+  --ssl-cert SSL_CERT   SSL certificate path
+  --ssl, --no-ssl       Options to enable or disable SSL
+```
 
 ## **Technologies used:**
 ### Libraries
@@ -23,6 +74,8 @@ The game of Connect Four implemented as a TUI using Python and `sockets` for net
 ### Tooling
 - [UV](https://docs.astral.sh/uv/)
   An awesome python project and dependency manager
+- [Just](https://github.com/casey/just)
+  An easy to use command runner written in Rust
 - [Ruff](https://docs.astral.sh/ruff/)
   A fast tool for python formatting and checking
 - Github Actions
@@ -103,4 +156,8 @@ The game of Connect Four implemented as a TUI using Python and `sockets` for net
    - Both clients disconnect and the server cleans up the game.
    - The server is now ready for the next game.
 
+# Security
+This ConnectFour implementation primarily relies on SSL for security, by utilizing the python SSL package the packets are encrypted and kept secure from prying eyes. The client establishes a connection with the server using the servers certificate which allows the client to verify the authentiticy of the server and prevent man in the middle attacks. The server also supports error handling, logging and packet validation which can help to mitigate and prevent potential security breaches.
+
+Despite the security provided through these means, it could be beneficial to implement stronger user authentication. Currently, any player is able to join any game if they know the correct game ID. It could be beneficial to implement user accounts using password based authentication or a protocol like OAuth. Additionally, the service should move over to SSL ceritifcates provided by an authority as opposed to ones generated and stored in a github repo.
 

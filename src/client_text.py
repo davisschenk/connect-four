@@ -8,6 +8,7 @@ from rich import print
 import sys
 import ssl
 from pathlib import Path
+import os
 
 logger.remove(0)
 logger.add(sys.stderr, format="<green>{time}</green> <level>{level}</level> - {message}", level="INFO", colorize=True)
@@ -25,12 +26,13 @@ class ConnectFourClient:
         self.ssl_cert = ssl_cert
 
     async def connect(self):
-        self.ssl = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        self.ssl.load_verify_locations(self.ssl_cert)
-        self.ssl.verify_mode = ssl.CERT_REQUIRED
-        self.ssl.check_hostname = False
+        if self.ssl_cert:
+            self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            self.ssl_context.load_verify_locations(self.ssl_cert)
+            self.ssl_context.verify_mode = ssl.CERT_REQUIRED
+            self.ssl_context.check_hostname = False
 
-        self.reader, self.writer = await asyncio.open_connection(self.host, self.port, ssl=self.ssl)
+        self.reader, self.writer = await asyncio.open_connection(self.host, self.port, ssl=self.ssl_context)
         logger.info("Connected to {}:{}", self.host, self.port)
 
     async def get_packet(self):
@@ -102,6 +104,8 @@ class ConnectFourClient:
             logger.debug("Waiting for a packet")
             if get_packet:
                 packet = await self.get_packet()
+                if packet is None:
+                    break
             else:
                 get_packet = True
 
@@ -112,8 +116,15 @@ class ConnectFourClient:
             if isinstance(packet, SyncGame):
                 self.game = packet.game
 
+            os.system("clear")
+            opponent = self.game.yellow_player if self.game.red_player.id == self.player.id else self.game.red_player
+            print("[bold]Players:[/bold]")
+            print(self.player.get_color(self.game), "[bold]" + self.player.name + "[/bold]")
+            print(opponent.get_color(self.game), opponent.name)
+
             if isinstance(packet, GameOver):
                 self.game = packet.game
+
                 print(self.game.board)
 
                 if self.player.id == packet.winner.id:
@@ -143,7 +154,7 @@ class ConnectFourClient:
                     if d == tasks[0]:
                         packet = d.result()
                         get_packet = False
-                        logger.info("Packet recieved while making move: {}", packet)
+                        logger.debug("Packet recieved while making move: {}", packet)
 
                     elif d == tasks[1]:
                         move = d.result()
@@ -156,8 +167,11 @@ class ConnectFourClient:
             else:
                 print("Waiting for the next player!")
 
-        self.writer.close()
-        await self.writer.wait_closed()
+        try:
+            self.writer.close()
+            await self.writer.wait_closed()
+        except ssl.SSLError:
+            pass
 
     async def play(self):
         await self.connect()
@@ -178,12 +192,13 @@ class ConnectFourClient:
 
 async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", default="localhost")
-    parser.add_argument("--port", "-p", type=int, default=60000)
-    parser.add_argument("--ssl-cert", type=Path, default=Path("certs/fullchain.pem"))
+    parser.add_argument("--host", default="localhost", help="Server hostname or IP")
+    parser.add_argument("--port", "-p", type=int, default=60000, help="Server port")
+    parser.add_argument("--ssl-cert", type=Path, default=Path("certs/fullchain.pem"), help="SSL certificate path")
+    parser.add_argument("--ssl", action=argparse.BooleanOptionalAction, default=True, help="Options to enable or disable SSL")
 
     args = parser.parse_args()
-    connect_four = ConnectFourClient(args.host, args.port, args.ssl_cert)
+    connect_four = ConnectFourClient(args.host, args.port, args.ssl_cert if args.ssl else None)
     await connect_four.play()
 
 
