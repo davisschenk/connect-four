@@ -9,7 +9,7 @@ import asyncio
 class Player(BaseModel):
     name: str
     id: UUID
-    addr: tuple[str, int]
+    addr: tuple
     _writer: Optional[asyncio.StreamWriter] = None
 
     def get_color(self, game):
