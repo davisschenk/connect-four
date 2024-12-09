@@ -10,7 +10,8 @@ The game of Connect Four implemented as a CLI using Python and `sockets` for net
 - Utilizes python async sockets
 - Easy to play
 
-
+## **Known Bugs:**
+- Client glitches out when it disconnects in match making phase
 
 ## **How to play:**
 ### Vanilla Python
@@ -161,3 +162,6 @@ This ConnectFour implementation primarily relies on SSL for security, by utilizi
 
 Despite the security provided through these means, it could be beneficial to implement stronger user authentication. Currently, any player is able to join any game if they know the correct game ID. It could be beneficial to implement user accounts using password based authentication or a protocol like OAuth. Additionally, the service should move over to SSL ceritifcates provided by an authority as opposed to ones generated and stored in a github repo.
 
+
+# Retrospective
+Overall, I am really proud of where this project ended up. I think it runs really well, and was a really good learning experience on how TCP and TLS work. If I were to continue working on this, the first thing I would focus on is improving my implementation of the server and client. They both depend on a lot of complicated state and if-elses which I think could be improved to help prevent bugs and weird edge cases. From there I would like to create user accounts and matchmaking, I think it would be fun to be able to be matched with a random opponent and have a persistent account that tracks the players stats. Additionally, I would like to finish my TUI version of the script, I began working on this initially but shifted my focus to a simpler command line interface due to the complexities of creating an actual GUI. Now that I have a baseline for how a client should work, I think it would be fun to go back and finish that version.
